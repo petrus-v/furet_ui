@@ -233,19 +233,29 @@ defineComponent('furet-ui-form-field-resource-manager', {
     props: ['value', 'x2m_resource', 'isReadonly', 'config'],
     inject: ['getEntry', 'getNewEntry'],
     data () {
-      const pks = this.get_pks()
       return {
         changes: {},
         manager: {
           readonly: this.isReadonly,
-          query: {additional_filter: pks},
-          pks,
+          query: {additional_filter: this.build_additional_filter()},
           x2m_pks: this.value,
           selectors: this.x2m_resource.selectors || {},
         },
       };
     },
     methods: {
+      build_additional_filter() {
+        let filters = {}
+        if (
+          this.config.remote_columns &&
+          this.config.local_columns
+        ) {
+          _.each(_.zip(this.config.remote_columns, this.config.local_columns), (cols) => {
+            filters[cols[0]] = this.x2m_resource.pks[cols[1]];
+          });
+        }
+        return filters;
+      },
       get_pks () {
         if (!this.value) return null;
         const pks = {};
@@ -269,11 +279,11 @@ defineComponent('furet-ui-form-field-resource-manager', {
       },
       updateQueryString (newquery) {
         const query = Object.assign({}, newquery);
-        if (query.mode !== 'form') query.additional_filter = this.pks
+        if (query.mode !== 'form') query.additional_filter = this.build_additional_filter()
         this.manager = Object.assign({}, this.manager, {query})
       },
       goToList () {
-        const query = {additional_filter: this.manager.pks}
+        const query = {additional_filter: this.build_additional_filter()}
         this.manager = Object.assign({}, this.manager, {query})
         this.$refs.resource.mode = 'multi';
         this.clearChange();
@@ -317,9 +327,8 @@ defineComponent('furet-ui-form-field-resource-manager', {
         this.manager.readonly = this.isReadonly
       },
       value () {
-        const pks = this.get_pks()
-        const query = Object.assign({}, this.manager.query, {additional_filter: pks})
-        this.manager = Object.assign({}, this.manager, {query, pks, x2m_pks: this.value})
+        const query = Object.assign({}, this.manager.query, {additional_filter: this.build_additional_filter()})
+        this.manager = Object.assign({}, this.manager, {query, x2m_pks: this.value})
       },
     },
     mounted () {
