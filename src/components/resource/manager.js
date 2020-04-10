@@ -256,27 +256,6 @@ defineComponent('furet-ui-form-field-resource-manager', {
         }
         return filters;
       },
-      get_pks () {
-        if (!this.value) return null;
-        const pks = {};
-        this.value.forEach(value => {
-          if (value.__x2m_state === 'DELETED') {
-            // removed so don't search and display this value
-          }
-          else if (value.__x2m_state === 'ADDED') {
-            // new dont search this value
-          }
-          else {
-            _.each(_.keys(value), key => {
-              if (key !== '__x2m_state') {
-                if (pks[key] === undefined) pks[key] = []
-                pks[key].push(value[key])
-              }
-            });
-          }
-        });
-        return pks
-      },
       updateQueryString (newquery) {
         const query = Object.assign({}, newquery);
         if (query.mode !== 'form') query.additional_filter = this.build_additional_filter()
