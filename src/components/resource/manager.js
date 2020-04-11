@@ -3,7 +3,7 @@ import Vue from 'vue';
 import axios from 'axios';
 import  {resources}  from './resources';
 import { defineComponent } from '../factory';
-import {pk2string, update_change_object} from '../../store/modules/data';
+import {update_change_object} from '../../store/modules/data';
 
 defineComponent('furet-ui-waiting-resource', {
   template: `
@@ -209,7 +209,7 @@ defineComponent('furet-ui-space-resource-manager', {
   },
 });
 
-defineComponent('furet-ui-form-field-resource-manager', {
+defineComponent("furet-ui-form-field-resource-manager", {
   template: `
     <div v-bind:style="{width: '100%'}" class="box">
         <furet-ui-page-errors v-bind:errors="errors"/>
@@ -228,90 +228,87 @@ defineComponent('furet-ui-form-field-resource-manager', {
         />
     </div>
   `,
-  extend: ['furet-ui-resource-manager'],
+  extend: ["furet-ui-resource-manager"],
   prototype: {
-    props: ['value', 'x2m_resource', 'isReadonly', 'config'],
-    inject: ['getEntry', 'getNewEntry'],
-    data () {
+    props: ["value", "x2m_resource", "isReadonly", "config"],
+    inject: ["getEntry", "getNewEntry"],
+    data() {
       return {
         changes: {},
         manager: {
           readonly: this.isReadonly,
-          query: {additional_filter: this.build_additional_filter()},
-          x2m_pks: this.value,
-          selectors: this.x2m_resource.selectors || {},
-        },
+          query: { additional_filter: this.build_additional_filter() },
+          selectors: this.x2m_resource.selectors || {}
+        }
       };
     },
     methods: {
       build_additional_filter() {
-        let filters = {}
-        if (
-          this.config.remote_columns &&
-          this.config.local_columns
-        ) {
-          _.each(_.zip(this.config.remote_columns, this.config.local_columns), (cols) => {
-            filters[cols[0]] = this.x2m_resource.pks[cols[1]];
-          });
+        let filters = {};
+        if (this.config.remote_columns && this.config.local_columns) {
+          _.each(
+            _.zip(this.config.remote_columns, this.config.local_columns),
+            cols => {
+              filters[cols[0]] = this.x2m_resource.pks[cols[1]];
+            }
+          );
         }
         return filters;
       },
-      updateQueryString (newquery) {
+      updateQueryString(newquery) {
         const query = Object.assign({}, newquery);
-        if (query.mode !== 'form') query.additional_filter = this.build_additional_filter()
-        this.manager = Object.assign({}, this.manager, {query})
+        if (query.mode !== "form")
+          query.additional_filter = this.build_additional_filter();
+        this.manager = Object.assign({}, this.manager, { query });
       },
-      goToList () {
-        const query = {additional_filter: this.build_additional_filter()}
-        this.manager = Object.assign({}, this.manager, {query})
-        this.$refs.resource.mode = 'multi';
+      goToList() {
+        const query = { additional_filter: this.build_additional_filter() };
+        this.manager = Object.assign({}, this.manager, { query });
+        this.$refs.resource.mode = "multi";
         this.clearChange();
       },
-      createData (data) {
-        data.changes = this.changes
-        this.$emit('add', data)
-        this.clearChange()
-        this.goToList ()
+      createData(data) {
+        data.changes = this.changes;
+        this.$emit("add", data);
+        this.clearChange();
+        this.goToList();
       },
-      updateData (data) {
-        data.changes = this.changes
-        this.$emit('update', data)
+      updateData(data) {
+        data.changes = this.changes;
+        this.$emit("update", data);
         this.$refs.resource.saved();
       },
-      deleteData (data) {
-        this.$emit('delete', data)
-        this.clearChange() // because is an hard action
-        this.updateQueryString({})  // replace it by breadscrumb
+      deleteData(data) {
+        this.$emit("delete", data);
+        this.clearChange(); // because is an hard action
+        this.updateQueryString({}); // replace it by breadscrumb
       },
-      clearChange () {
-        this.changes = {}  // clear the changes
+      clearChange() {
+        this.changes = {}; // clear the changes
       },
-      updateChangeState (action) {
-        this.changes = update_change_object(this.changes, action)
+      updateChangeState(action) {
+        this.changes = update_change_object(this.changes, action);
       },
-      getEntryWrapper (model, pk) {
-        const key = pk2string(pk)
-        const data = this.getEntry(model, pk)
-        const change = (this.changes[model] || {})[key] || {};
-        return Object.assign({}, data, change);
+      getEntryWrapper(model, pk) {
+        return this.$store.getters.get_entry(model, pk);
       },
-      getNewEntryWrapper (model, uuid) {
-        const data = this.getNewEntry(model, uuid)
-        const change = ((this.changes[model] || {}).new || {})[uuid] || {};
-        return Object.assign({__x2m_uuid: uuid}, data, change);
-      },
+      getNewEntryWrapper(model, uuid) {
+        return this.$store.getters.get_new_entry(model, uuid);
+      }
     },
     watch: {
-      isReadonly () {
-        this.manager.readonly = this.isReadonly
+      isReadonly() {
+        this.manager.readonly = this.isReadonly;
       },
-      value () {
-        const query = Object.assign({}, this.manager.query, {additional_filter: this.build_additional_filter()})
-        this.manager = Object.assign({}, this.manager, {query, x2m_pks: this.value})
-      },
+      value() {
+        const query = Object.assign({}, this.manager.query, {
+          additional_filter: this.build_additional_filter()
+        });
+        this.manager = Object.assign({}, this.manager, { query });
+      }
     },
-    mounted () {
+    mounted() {
       this.load_resource(this.id);
-    },
-  },
+    }
+  }
 });

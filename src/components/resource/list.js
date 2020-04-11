@@ -89,26 +89,11 @@ defineComponent('furet-ui-resource-list', {
       },
       api_formater (data) {
         this.$dispatchAll(data.data);
-        const res = [];
-        if (this.manager.x2m_pks) {
-          this.manager.x2m_pks.forEach(pk => {
-            if (pk.__x2m_state === 'DELETED') { 
-             // do nothing
-            } else if (pk.__x2m_state === 'ADDED') { 
-              res.push(this.getNewEntry(this.resource.model, pk.uuid))
-            } else if (pk.__x2m_state === 'UPDATED') { 
-              const pk2 = Object.assign({}, pk)
-              delete pk2['__x2m_state']
-              res.push(this.getEntry(this.resource.model, pk2))
-            } else {
-              res.push(this.getEntry(this.resource.model, pk))
-            }
-          });
-        } else {
-          data.pks.forEach(pk => {
-            res.push(this.getEntry(this.resource.model, pk))
-          });
-        }
+        let res = [];
+        data.pks.forEach(pk => {
+          res.push(this.$store.getters.get_entry(this.resource.model, pk))
+        });
+        res = res.concat(this.$store.getters.get_new_entries(this.resource.model))
         return res;
       },
       toggleHiddenColumn (field) {

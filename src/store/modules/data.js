@@ -67,6 +67,9 @@ export const getters = {
     const change = ((state.changes[model] || {}).new || {})[uuid] || {};
     return Object.assign({}, change);
   },
+  get_new_entries: (state) => (model) => {
+    return Object.values((state.changes[model] || {}).new || {});
+  }
 };
 
 // actions
