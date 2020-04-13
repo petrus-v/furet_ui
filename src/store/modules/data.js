@@ -7,6 +7,7 @@ This Source Code Form is subject to the terms of the Mozilla Public License,
 v. 2.0. If a copy of the MPL was not distributed with this file,You can
 obtain one at http://mozilla.org/MPL/2.0/.
 **/
+import Vue from "vue";
 import _ from 'underscore';
 
 export const pk2string = (pk) => {
@@ -38,14 +39,21 @@ export const update_change_object = (state_changes, action) => {
     })
   }
   if (changes[action.model] == undefined) changes[action.model] = {}
+  let ref_key = null;
   if (action.uuid != null) {
     if (changes[action.model].new == undefined) changes[action.model].new = {};
-    if (changes[action.model].new[action.uuid] == undefined) changes[action.model].new[action.uuid] = {};
-    changes[action.model].new[action.uuid][action.fieldname] = action.value;
+    if (changes[action.model].new[action.uuid] == undefined)
+      changes[action.model].new[action.uuid] = {};
+    ref_key = changes[action.model].new[action.uuid];
   } else {
-    const pk = pk2string(action.pk)
+    const pk = pk2string(action.pk);
     if (changes[action.model][pk] == undefined) changes[action.model][pk] = {};
-    changes[action.model][pk][action.fieldname] = action.value;
+    ref_key = changes[action.model][pk];
+  }
+  if (Array.isArray(ref_key[action.fieldname]) && Array.isArray(action.value)) {
+    ref_key[action.fieldname] = ref_key[action.fieldname].concat(action.value);
+  } else {
+    ref_key[action.fieldname] = action.value;
   }
   return changes
 }
@@ -86,11 +94,10 @@ export const mutations = {
         state.data = data;
     },
     'DELETE_DATA'(state, action) {
-        const data = Object.assign({}, state.data)
         const pks = pk2string(action.pks)
-        if (data[action.model] && data[action.model][pks])
-          delete data[action.model][pks];
-        state.data = data;
+        if (state.data[action.model]){
+            Vue.delete(state.data[action.model], pks);
+        }
     },
     'UPDATE_CHANGE'(state, action) {
         state.changes = update_change_object(state.changes, action)
