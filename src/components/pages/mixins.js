@@ -147,7 +147,7 @@ defineComponent('mixin-page-multi-entries', {
     props: [
       'title', 'default_filters', 'default_tags', 'defaultSortField', 'defaultSortOrder',
       'perpage', 'can_go_to_new', 'rest_api_url', 'rest_api_params', 'rest_api_formater', 
-      'query'],
+      'query', 'update_data_with_local_changes'],
     data() {
       const sortingPriority = [];
       if (this.defaultSortField) {
@@ -343,7 +343,13 @@ defineComponent('mixin-page-multi-entries', {
         }
         if (query.additional_filter) this.additional_filter = query.additional_filter;
         else if (query.additional_filter === null) this.additional_filter = null;
-        this.loadAsyncData();
+        if(query.no_reload !== true){
+          this.loadAsyncData();
+        } else {
+          if (this.update_data_with_local_changes){
+            this.data = this.update_data_with_local_changes(this.data);
+          }
+        }
       }
     },
     watch: {

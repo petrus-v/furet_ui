@@ -3,7 +3,7 @@ import Vue from 'vue';
 import axios from 'axios';
 import  {resources}  from './resources';
 import { defineComponent } from '../factory';
-import {update_change_object} from '../../store/modules/data';
+import { pk2string, update_change_object } from "../../store/modules/data";
 
 defineComponent('furet-ui-waiting-resource', {
   template: `
@@ -81,6 +81,7 @@ defineComponent('furet-ui-resource-manager', {
         updateChangeState: this.updateChangeState,
         getEntry: this.getEntryWrapper,
         getNewEntry: this.getNewEntryWrapper,
+        getNewEntries: this.getNewEntriesWrapper,
       }
     },
   },
@@ -194,6 +195,9 @@ defineComponent('furet-ui-space-resource-manager', {
       getNewEntryWrapper (model, uuid) {
         return this.$store.getters.get_new_entry(model, uuid)
       },
+      getNewEntriesWrapper (model, uuid) {
+        return this.$store.getters.get_new_entries(model, uuid)
+      },
     },
     provide() {
       return {
@@ -231,7 +235,7 @@ defineComponent("furet-ui-form-field-resource-manager", {
   extend: ["furet-ui-resource-manager"],
   prototype: {
     props: ["value", "x2m_resource", "isReadonly", "config"],
-    inject: ["getEntry", "getNewEntry"],
+    inject: ["getEntry", "getNewEntry", "getNewEntries"],
     data() {
       return {
         changes: {},
@@ -262,26 +266,33 @@ defineComponent("furet-ui-form-field-resource-manager", {
         this.manager = Object.assign({}, this.manager, { query });
       },
       goToList() {
-        const query = { additional_filter: this.build_additional_filter() };
+        const query = {
+          additional_filter: this.build_additional_filter(),
+          no_reload: true
+        };
         this.manager = Object.assign({}, this.manager, { query });
         this.$refs.resource.mode = "multi";
-        this.clearChange();
+        
       },
       createData(data) {
-        data.changes = this.changes;
+        data.changes = Object.assign({}, this.changes);
         this.$emit("add", data);
-        this.clearChange();
+        this.changes[data.model]["new"][data.uuid].__x2m_row_state = "create";
+        this.changes[data.model]["new"][data.uuid].uuid = data.uuid;
         this.goToList();
       },
       updateData(data) {
-        data.changes = this.changes;
+        data.changes = Object.assign({}, this.changes);
         this.$emit("update", data);
-        this.$refs.resource.saved();
+        this.changes[data.model][pk2string(data.pks)].__x2m_row_state = "update";
+        this.goToList();
       },
       deleteData(data) {
         this.$emit("delete", data);
-        this.clearChange(); // because is an hard action
-        this.updateQueryString({}); // replace it by breadscrumb
+        if (this.changes[data.model]  === undefined) this.changes[data.model] = {}
+        if (this.changes[data.model][pk2string(data.pks)]  === undefined) this.changes[data.model][pk2string(data.pks)] = {}
+        this.changes[data.model][pk2string(data.pks)].__x2m_row_state = "delete";
+        this.goToList();
       },
       clearChange() {
         this.changes = {}; // clear the changes
@@ -290,10 +301,18 @@ defineComponent("furet-ui-form-field-resource-manager", {
         this.changes = update_change_object(this.changes, action);
       },
       getEntryWrapper(model, pk) {
-        return this.$store.getters.get_entry(model, pk);
+        const key = pk2string(pk);
+        const data = this.getEntry(model, pk);
+        const change = (this.changes[model] || {})[key] || {};
+        return Object.assign({}, data, change);
       },
       getNewEntryWrapper(model, uuid) {
-        return this.$store.getters.get_new_entry(model, uuid);
+        const data = this.getNewEntry(model, uuid);
+        const change = ((this.changes[model] || {}).new || {})[uuid] || {};
+        return Object.assign({ __x2m_uuid: uuid }, data, change);
+      },
+      getNewEntriesWrapper(model) {
+        return Object.values((this.changes[model] || {}).new || {});
       }
     },
     watch: {

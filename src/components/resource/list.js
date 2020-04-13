@@ -15,6 +15,7 @@ defineComponent('furet-ui-resource-list', {
       rest_api_url="/furet-ui/crud"
       v-bind:rest_api_params="api_params"
 
+      v-bind:update_data_with_local_changes="update_data"
       v-bind:rest_api_formater="api_formater"
       v-bind:query="manager.query"
       v-bind:readonly="manager.readonly"
@@ -62,7 +63,7 @@ defineComponent('furet-ui-resource-list', {
   extend: ['furet-ui-resource'],
   prototype: {
     props: ['id', 'manager'],
-    inject: ['getEntry', 'getNewEntry'],
+    inject: ['getEntry', 'getNewEntry', 'getNewEntries'],
     data () {
       return {
         data: [],
@@ -77,7 +78,7 @@ defineComponent('furet-ui-resource-list', {
           model: this.resource.model,
           fields: this.resource.fields.toString(),
         }
-      },
+      }
     },
     methods: {
       safe_eval (hidden, row) {
@@ -91,10 +92,32 @@ defineComponent('furet-ui-resource-list', {
         this.$dispatchAll(data.data);
         let res = [];
         data.pks.forEach(pk => {
-          res.push(this.$store.getters.get_entry(this.resource.model, pk))
+          res.push(this.getEntry(this.resource.model, pk))
         });
-        res = res.concat(this.$store.getters.get_new_entries(this.resource.model))
+        const news = this.getNewEntries(this.resource.model);
+        res = res.concat(news)
+        data.total += news.length;
         return res;
+      },
+      update_data (data) {
+        // find a better way to get pks information
+        this.$parent.resource.pks
+        data = data.map(row => {
+          let pks = {};
+          this.$parent.resource.pks.forEach(key => pks[key] = row[key]);
+          return Object.assign(row, this.getEntry(this.resource.model, pks))
+        });
+        const news = this.getNewEntries(this.resource.model);
+        news.forEach(new_row => {
+          const present = data.filter(row => {
+            return new_row.uuid === row.uuid ? true : false;
+          })
+          if(present.length === 0) {
+            data.push(new_row);
+          }
+        })
+
+        return data;
       },
       toggleHiddenColumn (field) {
         this.$store.commit('UPDATE_RESOURCE_TOGGLE_HIDDEN_COLUMN', {id: this.id, field})
