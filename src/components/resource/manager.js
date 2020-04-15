@@ -272,30 +272,35 @@ defineComponent("furet-ui-form-field-resource-manager", {
         };
         this.manager = Object.assign({}, this.manager, { query });
         this.$refs.resource.mode = "multi";
-        
       },
       createData(data) {
-        data.changes = Object.assign({}, this.changes);
+        data.changes = this.changes;
         this.$emit("add", data);
-        this.changes[data.model]["new"][data.uuid].__x2m_row_state = "create";
-        this.changes[data.model]["new"][data.uuid].uuid = data.uuid;
         this.goToList();
       },
       updateData(data) {
-        data.changes = Object.assign({}, this.changes);
+        data.changes = this.changes;
         this.$emit("update", data);
-        this.changes[data.model][pk2string(data.pks)].__x2m_row_state = "update";
         this.goToList();
       },
       deleteData(data) {
         this.$emit("delete", data);
-        if (this.changes[data.model]  === undefined) this.changes[data.model] = {}
-        if (this.changes[data.model][pk2string(data.pks)]  === undefined) this.changes[data.model][pk2string(data.pks)] = {}
+        if (this.changes[data.model] === undefined) {
+          this.changes[data.model] = {};
+        }
+        if (this.changes[data.model][pk2string(data.pks)] === undefined) {
+          this.changes[data.model][pk2string(data.pks)] = {};
+        }
         this.changes[data.model][pk2string(data.pks)].__x2m_row_state = "delete";
         this.goToList();
       },
-      clearChange() {
-        this.changes = {}; // clear the changes
+      clearChange(data) {
+        if (data.uuid) {
+          Vue.delete(this.changes[this.config.model]["new"], data.uuid);
+        } else {
+          Vue.delete(this.changes[this.config.model], pk2string(data.pks));
+        }
+        // this.changes = {}; // clear the changes
       },
       updateChangeState(action) {
         this.changes = update_change_object(this.changes, action);
@@ -304,7 +309,16 @@ defineComponent("furet-ui-form-field-resource-manager", {
         const key = pk2string(pk);
         const data = this.getEntry(model, pk);
         const change = (this.changes[model] || {})[key] || {};
-        return Object.assign({}, data, change);
+        const change_state = {};
+        if (
+          Object.keys(change).length > 0 &&
+          change.__x2m_row_state !== "delete"
+        ) {
+          // delete state is store so if there is no state present it's
+          // an update, this avoid to send row state to the backend
+          change_state.__x2m_row_state = "update";
+        }
+        return Object.assign({}, data, change, change_state);
       },
       getNewEntryWrapper(model, uuid) {
         const data = this.getNewEntry(model, uuid);
@@ -312,7 +326,18 @@ defineComponent("furet-ui-form-field-resource-manager", {
         return Object.assign({ __x2m_uuid: uuid }, data, change);
       },
       getNewEntriesWrapper(model) {
-        return Object.values((this.changes[model] || {}).new || {});
+        const res = [];
+        Object.entries((this.changes[model] || {}).new || {}).forEach(
+          ([uuid, entry]) => {
+            res.push(
+              Object.assign({}, entry, {
+                __x2m_uuid: uuid,
+                __x2m_row_state: "create"
+              })
+            );
+          }
+        );
+        return res;
       }
     },
     watch: {

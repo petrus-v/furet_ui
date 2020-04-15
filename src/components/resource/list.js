@@ -103,14 +103,19 @@ defineComponent('furet-ui-resource-list', {
         // find a better way to get pks information
         this.$parent.resource.pks
         data = data.map(row => {
-          let pks = {};
-          this.$parent.resource.pks.forEach(key => pks[key] = row[key]);
-          return Object.assign(row, this.getEntry(this.resource.model, pks))
+          if(row.__x2m_uuid) {
+            Object.assign(row, this.getNewEntry(this.resource.model, row.__x2m_uuid));
+          } else {
+            let pks = {};
+            this.$parent.resource.pks.forEach(key => pks[key] = row[key]);
+            Object.assign(row, this.getEntry(this.resource.model, pks));
+          }
+          return row;
         });
         const news = this.getNewEntries(this.resource.model);
         news.forEach(new_row => {
           const present = data.filter(row => {
-            return new_row.uuid === row.uuid ? true : false;
+            return new_row.__x2m_uuid === row.__x2m_uuid ? true : false;
           })
           if(present.length === 0) {
             data.push(new_row);
