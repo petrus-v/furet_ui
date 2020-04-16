@@ -68,15 +68,29 @@ export const getters = {
   get_entry: (state) => (model, pk) => {
     const key = pk2string(pk)
     const data = (state.data[model] || {})[key] || {};
-    const change = (state.changes[model] || {})[key] || {};
+    const change = {};
+    if ((state.changes[model] || {})[key]) {
+      Object.assign(change, {__change_state: "update"}, state.changes[model][key]);
+    } 
     return Object.assign({}, data, change);
   },
   get_new_entry: (state) => (model, uuid) => {
     const change = ((state.changes[model] || {}).new || {})[uuid] || {};
-    return Object.assign({}, change);
+    return Object.assign({__x2m_uuid: uuid, __change_state: "create"}, change);
   },
   get_new_entries: (state) => (model) => {
-    return Object.values((state.changes[model] || {}).new || {});
+    const res = [];
+    Object.entries((state.changes[model] || {}).new || {}).forEach(
+      ([uuid, entry]) => {
+        res.push(
+          Object.assign({}, entry, {
+            __x2m_uuid: uuid,
+            __change_state: "create"
+          })
+        );
+      }
+    );
+    return res;
   }
 };
 
@@ -94,7 +108,7 @@ export const mutations = {
         state.data = data;
     },
     'DELETE_DATA'(state, action) {
-        const pks = pk2string(action.pks)
+        const pks = pk2string(action.pks);
         if (state.data[action.model]){
             Vue.delete(state.data[action.model], pks);
         }

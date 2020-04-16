@@ -95,7 +95,7 @@ defineComponent('furet-ui-list', {
       row_state() {
         return (row, _index) => {
           let style_class = ""
-          switch(row.__x2m_row_state) {
+          switch(row.__change_state) {
             case "create":
               style_class = "has-background-success";
               break;

@@ -3,7 +3,7 @@ import Vue from 'vue';
 import axios from 'axios';
 import  {resources}  from './resources';
 import { defineComponent } from '../factory';
-import { pk2string, update_change_object } from "../../store/modules/data";
+import { update_change_object } from "../../store/modules/data";
 
 defineComponent('furet-ui-waiting-resource', {
   template: `
@@ -266,6 +266,7 @@ defineComponent("furet-ui-form-field-resource-manager", {
         this.manager = Object.assign({}, this.manager, { query });
       },
       goToList() {
+        this.clearChange();
         const query = {
           additional_filter: this.build_additional_filter(),
           no_reload: true
@@ -285,59 +286,27 @@ defineComponent("furet-ui-form-field-resource-manager", {
       },
       deleteData(data) {
         this.$emit("delete", data);
-        if (this.changes[data.model] === undefined) {
-          this.changes[data.model] = {};
-        }
-        if (this.changes[data.model][pk2string(data.pks)] === undefined) {
-          this.changes[data.model][pk2string(data.pks)] = {};
-        }
-        this.changes[data.model][pk2string(data.pks)].__x2m_row_state = "delete";
         this.goToList();
       },
-      clearChange(data) {
-        if (data.uuid) {
-          Vue.delete(this.changes[this.config.model]["new"], data.uuid);
-        } else {
-          Vue.delete(this.changes[this.config.model], pk2string(data.pks));
-        }
-        // this.changes = {}; // clear the changes
+      clearChange(_data) {
+        // if (data.uuid) {
+        //   Vue.delete(this.changes[this.config.model]["new"], data.uuid);
+        // } else {
+        //   Vue.delete(this.changes[this.config.model], pk2string(data.pks));
+        // }
+        this.changes = {}; // clear the changes
       },
       updateChangeState(action) {
         this.changes = update_change_object(this.changes, action);
       },
       getEntryWrapper(model, pk) {
-        const key = pk2string(pk);
-        const data = this.getEntry(model, pk);
-        const change = (this.changes[model] || {})[key] || {};
-        const change_state = {};
-        if (
-          Object.keys(change).length > 0 &&
-          change.__x2m_row_state !== "delete"
-        ) {
-          // delete state is store so if there is no state present it's
-          // an update, this avoid to send row state to the backend
-          change_state.__x2m_row_state = "update";
-        }
-        return Object.assign({}, data, change, change_state);
+        return this.getEntry(model, pk);
       },
       getNewEntryWrapper(model, uuid) {
-        const data = this.getNewEntry(model, uuid);
-        const change = ((this.changes[model] || {}).new || {})[uuid] || {};
-        return Object.assign({ __x2m_uuid: uuid }, data, change);
+        return this.getNewEntry(model, uuid);
       },
       getNewEntriesWrapper(model) {
-        const res = [];
-        Object.entries((this.changes[model] || {}).new || {}).forEach(
-          ([uuid, entry]) => {
-            res.push(
-              Object.assign({}, entry, {
-                __x2m_uuid: uuid,
-                __x2m_row_state: "create"
-              })
-            );
-          }
-        );
-        return res;
+        return this.getNewEntries(model);
       }
     },
     watch: {

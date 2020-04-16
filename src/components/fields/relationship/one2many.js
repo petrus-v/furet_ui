@@ -10,8 +10,8 @@ obtain one at http://mozilla.org/MPL/2.0/.
 import {defineComponent} from '../../factory'
 import {fields} from '../fields';
 import {RelationShipX2MList} from './common';
+import { pk2string } from "../../../store/modules/data";
 
-// import { pk2string } from "../../../store/modules/data";
 
 /**
  * furet-ui-list-field-one2many component is used to manage relationship one2many on list
@@ -117,19 +117,17 @@ defineComponent("furet-ui-form-field-one2many", {
       o2m_add(actions) {
         const newvalue = [];
         newvalue.push({ __x2m_state: "ADDED", uuid: actions.uuid });
-        // actions.changes[actions.model]["new"][actions.uuid].uuid = actions.uuid;
-        // actions.changes[actions.model]["new"][actions.uuid].__x2m_row_state = "create";
         this.updateValue(newvalue, actions.changes);
       },
       o2m_update(actions) {
-        // actions.changes[actions.model][pk2string(actions.pks)].__x2m_row_state = "update";
         this.updateValue(this.addState(actions, "UPDATED"), actions.changes);
       },
       o2m_delete(actions) {
-        // let change = {} ;
-        // change[actions.model] = {};
-        // change[actions.model][pk2string(actions.pks)] = {__x2m_row_state: "delete"};
-        this.updateValue(this.addState(actions, "DELETED"));
+        const data = {};
+        data[actions.model] = {};
+        const pks = pk2string(actions.pks);
+        data[actions.model][pks] = Object.assign({__change_state: "delete"}, actions.pks);
+        this.updateValue(this.addState(actions, "DELETED"), data);
       }
     }
   }
