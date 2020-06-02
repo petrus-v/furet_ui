@@ -398,6 +398,147 @@ describe("store data module: update_change_object function", () => {
     }
     expect(update_change_object(change, action2)).toStrictEqual(expected)
   });
+
+
+  it("merge + uuid: existing data", () => {
+    const state = {
+      "model.1": {
+        '[["id",1]]': {}
+      }
+    };
+    const action = {
+      model: "model.1",
+      pk: { id: 1 },
+      uuid: undefined,
+      fieldname: "items",
+      value: [{
+        __x2m_state: "ADDED",
+        uuid: "fake_uuid_tag2"
+      }],
+      merge: {
+        "model.2": {
+          new: {
+            fake_uuid_tag2: { name: "test 2" }
+          }
+        }
+      }
+    };
+    expect(update_change_object(state, action)).toEqual({
+      "model.1": {
+        '[["id",1]]': {
+          items: [
+            { __x2m_state: "ADDED", uuid: "fake_uuid_tag2" }
+          ]
+        }
+      },
+      "model.2": {
+        new: {
+          fake_uuid_tag2: { name: "test 2" }
+        }
+      }
+    });
+  });
+
+  it("merge + uuid: add an other x2m line", () => {
+    const state = {
+      "model.1": {
+        '[["id",1]]': {
+          items: [{ __x2m_state: "ADDED", uuid: "fake_uuid_tag1" }]
+        }
+      },
+      "model.2": {
+        new: {
+          fake_uuid_tag1: { name: "test" }
+        }
+      }
+    };
+    const action = {
+      model: "model.1",
+      pk: { id: 1 },
+      uuid: undefined,
+      fieldname: "items",
+      value: [{
+        __x2m_state: "ADDED",
+        uuid: "fake_uuid_tag2"
+      }],
+      merge: {
+        "model.2": {
+          new: {
+            fake_uuid_tag2: { name: "test 2" }
+          }
+        }
+      }
+    };
+    expect(update_change_object(state, action)).toEqual({
+      "model.1": {
+        '[["id",1]]': {
+          items: [
+            { __x2m_state: "ADDED", uuid: "fake_uuid_tag1" },
+            { __x2m_state: "ADDED", uuid: "fake_uuid_tag2" }
+          ]
+        }
+      },
+      "model.2": {
+        new: {
+          fake_uuid_tag1: { name: "test" },
+          fake_uuid_tag2: { name: "test 2" }
+        }
+      }
+    });
+  });
+  
+  it("revert x2m change", () => {
+    const state = {
+      "model.1": {
+        '[["id",1]]': {
+          items: [
+            { __x2m_state: "ADDED", uuid: "fake_uuid_tag1" },
+            { __x2m_state: "ADDED", uuid: "fake_uuid_tag2" }
+          ]
+        }
+      },
+      "model.2": {
+        new: {
+          fake_uuid_tag1: { name: "test" },
+          fake_uuid_tag2: { name: "test 2" }
+        },
+        '[["id",3]]': {name: "test3"},
+        '[["id",4]]': {name: "test4"}
+      }
+    }
+    const action = {
+      model: "model.1",
+      pk: { id: 1 },
+      uuid: undefined,
+      fieldname: "items",
+      value: [{
+        __revert: true,
+        uuid: "fake_uuid_tag2"
+      }],
+      merge: {
+        "model.2": {
+          new: {
+            fake_uuid_tag2: { __revert: true }
+          },
+          '[["id",3]]': {__revert: true},
+        }
+      }
+    };
+    expect(update_change_object(state, action)).toEqual({
+      "model.1": {
+        '[["id",1]]': {
+          items: [{ __x2m_state: "ADDED", uuid: "fake_uuid_tag1" }]
+        }
+      },
+      "model.2": {
+        new: {
+          fake_uuid_tag1: { name: "test" }
+        },
+        '[["id",4]]': {name: "test4"}
+      }
+    });
+  });
+
 });
 
 describe("store data module: mutation", () => {
@@ -597,91 +738,5 @@ describe("store data module: getter", () => {
     }
     store.commit("UPDATE_CHANGE", action);
     expect(store.getters.get_new_entry('Model.1', 'uuid')).toStrictEqual(expected);
-  });
-  it("test new data", () => {
-    const state = {
-      "model.1": {
-        '[["id",1]]': {}
-      }
-    };
-    const action = {
-      model: "model.1",
-      pk: { id: 1 },
-      uuid: undefined,
-      fieldname: "items",
-      value: [{
-        __x2m_state: "ADDED",
-        uuid: "fake_uuid_tag2"
-      }],
-      merge: {
-        "model.2": {
-          new: {
-            fake_uuid_tag2: { name: "test 2" }
-          }
-        }
-      }
-    };
-    expect(update_change_object(state, action)).toEqual({
-      "model.1": {
-        '[["id",1]]': {
-          items: [
-            { __x2m_state: "ADDED", uuid: "fake_uuid_tag2" }
-          ]
-        }
-      },
-      "model.2": {
-        new: {
-          fake_uuid_tag2: { name: "test 2" }
-        }
-      }
-    });
-  });
-
-  it("update_change_object", () => {
-    const state = {
-      "model.1": {
-        '[["id",1]]': {
-          items: [{ __x2m_state: "ADDED", uuid: "fake_uuid_tag1" }]
-        }
-      },
-      "model.2": {
-        new: {
-          fake_uuid_tag1: { name: "test" }
-        }
-      }
-    };
-    const action = {
-      model: "model.1",
-      pk: { id: 1 },
-      uuid: undefined,
-      fieldname: "items",
-      value: [{
-        __x2m_state: "ADDED",
-        uuid: "fake_uuid_tag2"
-      }],
-      merge: {
-        "model.2": {
-          new: {
-            fake_uuid_tag2: { name: "test 2" }
-          }
-        }
-      }
-    };
-    expect(update_change_object(state, action)).toEqual({
-      "model.1": {
-        '[["id",1]]': {
-          items: [
-            { __x2m_state: "ADDED", uuid: "fake_uuid_tag1" },
-            { __x2m_state: "ADDED", uuid: "fake_uuid_tag2" }
-          ]
-        }
-      },
-      "model.2": {
-        new: {
-          fake_uuid_tag1: { name: "test" },
-          fake_uuid_tag2: { name: "test 2" }
-        }
-      }
-    });
   });
 });

@@ -23,17 +23,25 @@ export const update_change_object = (state_changes, action) => {
   const changes = Object.assign({}, state_changes);
   if (action.merge !== undefined) {
     _.each(_.keys(action.merge), model => {
-      if (changes[model] === undefined) changes[model] = {}
+      if (changes[model] === undefined) changes[model] = {};
       _.each(_.keys(action.merge[model]), pk => {
         if (changes[model][pk] === undefined) changes[model][pk] = {}
         if (pk === 'new') {
           if (changes[model].new === undefined) changes[model].new = {}
           _.each(_.keys(action.merge[model].new), uuid => {
             if (changes[model].new[uuid] === undefined) changes[model].new[uuid] = {}
-            Object.assign(changes[model].new[uuid], action.merge[model].new[uuid])
+            if( action.merge[model].new[uuid].__revert === true ){
+              Vue.delete(changes[model].new, uuid);
+            } else {
+              Object.assign(changes[model].new[uuid], action.merge[model].new[uuid])
+            }
           });
         } else {
-          Object.assign(changes[model][pk], action.merge[model][pk])
+          if( action.merge[model][pk].__revert === true ){
+            Vue.delete(changes[model], pk);
+          } else {
+            Object.assign(changes[model][pk], action.merge[model][pk])
+          }
         }
       });
     })
@@ -51,7 +59,21 @@ export const update_change_object = (state_changes, action) => {
     ref_key = changes[action.model][pk];
   }
   if (Array.isArray(ref_key[action.fieldname]) && Array.isArray(action.value)) {
-    ref_key[action.fieldname] = ref_key[action.fieldname].concat(action.value);
+    _.each(action.value, val => {
+      const res = ref_key[action.fieldname].filter(v => v.uuid === val.uuid);
+      const index = ref_key[action.fieldname].indexOf(res[0]);
+      if(res.length === 1 && index > -1){
+        ref_key[action.fieldname][index] = Object.assign(
+            ref_key[action.fieldname][index], val
+        );
+      } else {
+        ref_key[action.fieldname].push(val);
+      }
+    });
+
+    ref_key[action.fieldname] = ref_key[action.fieldname].filter(
+      element => element.__revert !== true
+    );
   } else {
     ref_key[action.fieldname] = action.value;
   }
