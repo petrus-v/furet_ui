@@ -175,7 +175,7 @@ defineComponent('furet-ui-resource-list', {
         this.$emit('go-to-new');
       },
       goToPage(row) {
-        this.$emit('go-to-page', row);
+        if(row.__change_state !== "delete") this.$emit('go-to-page', row);
       },
       refresh() {
         this.$refs.list.loadAsyncData();
