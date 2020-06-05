@@ -108,6 +108,9 @@ defineComponent('furet-ui-resource-list', {
       getBreadcrumbInfo() {
         return {label: this.$t(this.resource.title), icon: "list"};
       },
+      revert_modification(row){
+        this.$emit("revert-data", row)
+      },
       api_formater (obj, data) {
         this.$dispatchAll(data.data);
         let res = [];

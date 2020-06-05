@@ -29,19 +29,13 @@ export const update_change_object = (state_changes, action) => {
         if (pk === 'new') {
           if (changes[model].new === undefined) changes[model].new = {}
           _.each(_.keys(action.merge[model].new), uuid => {
-            if (changes[model].new[uuid] === undefined) changes[model].new[uuid] = {}
-            if( action.merge[model].new[uuid].__revert === true ){
-              Vue.delete(changes[model].new, uuid);
-            } else {
-              Object.assign(changes[model].new[uuid], action.merge[model].new[uuid])
-            }
+            if (changes[model].new[uuid] === undefined) changes[model].new[uuid] = {};
+            if (action.merge[model].new[uuid].__revert === true) changes[model].new[uuid] = {};
+            Object.assign(changes[model].new[uuid], action.merge[model].new[uuid]);
           });
         } else {
-          if( action.merge[model][pk].__revert === true ){
-            Vue.delete(changes[model], pk);
-          } else {
-            Object.assign(changes[model][pk], action.merge[model][pk])
-          }
+          if (action.merge[model][pk].__revert === true) changes[model][pk] = {};
+          Object.assign(changes[model][pk], action.merge[model][pk])
         }
       });
     })
@@ -92,24 +86,32 @@ export const getters = {
     const data = (state.data[model] || {})[key] || {};
     const change = {};
     if ((state.changes[model] || {})[key]) {
-      Object.assign(change, {__change_state: "update"}, state.changes[model][key]);
+      if (state.changes[model][key].__revert !== true || Object.keys(state.changes[model][key]).length > 1){
+        Object.assign(change, {__change_state: "update"}, state.changes[model][key]);
+      }
     } 
     return Object.assign({}, data, change);
   },
   get_new_entry: (state) => (model, uuid) => {
     const change = ((state.changes[model] || {}).new || {})[uuid] || {};
-    return Object.assign({__uuid: uuid, __change_state: "create"}, change);
+    if (change.__revert !== true || Object.keys(change).length > 1){
+      return Object.assign({__uuid: uuid, __change_state: "create"}, change);
+    } else {
+      return {};
+    }
   },
   get_new_entries: (state) => (model) => {
     const res = [];
     Object.entries((state.changes[model] || {}).new || {}).forEach(
       ([uuid, entry]) => {
-        res.push(
-          Object.assign({}, entry, {
-            __uuid: uuid,
-            __change_state: "create"
-          })
-        );
+        if (entry.__revert !== true || Object.keys(entry).length > 1){
+          res.push(
+            Object.assign({}, entry, {
+              __uuid: uuid,
+              __change_state: "create"
+            })
+          );
+        }
       }
     );
     return res;
