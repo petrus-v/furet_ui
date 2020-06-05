@@ -54,7 +54,10 @@ export const update_change_object = (state_changes, action) => {
   }
   if (Array.isArray(ref_key[action.fieldname]) && Array.isArray(action.value)) {
     _.each(action.value, val => {
-      const res = ref_key[action.fieldname].filter(v => v.uuid === val.uuid);
+      const copy_val =  Object.assign({}, val);
+      delete copy_val.__revert;
+      delete copy_val.__x2m_state;
+      const res = ref_key[action.fieldname].filter(v => _.isMatch(v, copy_val));
       const index = ref_key[action.fieldname].indexOf(res[0]);
       if(res.length === 1 && index > -1){
         ref_key[action.fieldname][index] = Object.assign(
